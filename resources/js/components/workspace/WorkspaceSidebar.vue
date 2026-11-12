@@ -182,9 +182,9 @@ const currentKey = computed(() => {
         return pending.value;
     }
 
-    if (assistant.open.value) {
-        return askRow.key;
-    }
+    // The highlight follows the page you're on. Ask AI is a panel beside the
+    // page, not a page, so it shows it's open by its own text colour instead
+    // of taking the highlight (which then snapped back to it after every click).
 
     const row = allRows.value.find((row) => row.item?.active);
     const child = collapsed
@@ -420,7 +420,7 @@ const rowClass =
                                         collapsed
                                             ? 'justify-center px-0'
                                             : 'px-2.5',
-                                        currentKey === row.key
+                                        assistant.open.value
                                             ? 'text-(--ds-text)'
                                             : 'text-(--ds-text-secondary) hover:text-(--ds-text)',
                                         focusRing,
