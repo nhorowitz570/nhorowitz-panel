@@ -16,6 +16,8 @@ import WorkspaceSettingsLayout from '@/layouts/workspace/WorkspaceSettingsLayout
 import { initializeCelebrate } from '@/lib/celebrate';
 import { initErrorTracking } from '@/lib/errorTracking';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { countUp } from '@/lib/motion/countUp';
+import { initSegmentSlider } from '@/lib/motion/segments';
 import { resolvePanelPage } from '@/lib/pages';
 
 const appName = import.meta.env.VITE_APP_NAME || 'ServerOS';
@@ -67,6 +69,7 @@ void createInertiaApp({
         );
         installFieldErrors();
         initErrorTracking(app);
+        app.directive('count-up', countUp);
         app.directive('focus', {
             mounted: (el: HTMLElement, shouldFocus) => {
                 if (shouldFocus.value !== false) {
@@ -83,6 +86,8 @@ void createInertiaApp({
 requestAnimationFrame(() => document.getElementById('page-outline')?.remove());
 
 initializeTheme();
+
+initSegmentSlider();
 
 initializeFlashToast();
 

@@ -977,6 +977,7 @@ function usage(mount: string): { percent: number; free: number } | null {
                                 {{ tile.label }}
                             </h2>
                             <p
+                                v-count-up
                                 class="text-2xl/8 font-medium tracking-[-0.005em] tabular-nums"
                             >
                                 {{ tile.value }}
@@ -1024,6 +1025,7 @@ function usage(mount: string): { percent: number; free: number } | null {
                             {{ $t('Services') + ' ' }}
                         </h2>
                         <p
+                            v-count-up
                             class="text-2xl/8 font-medium tracking-[-0.005em] tabular-nums"
                         >
                             {{ machine.inventory?.services?.length ?? 0 }}

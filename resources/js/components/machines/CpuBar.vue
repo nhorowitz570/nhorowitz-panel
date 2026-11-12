@@ -67,15 +67,13 @@ const bars = computed(() => {
             aria-hidden="true"
         >
             <div
-                class="h-full w-full origin-left rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none"
+                class="ds-fill h-full w-full rounded-full"
                 :class="
                     isHot
                         ? 'bg-[#DC2626] dark:bg-[#F87171]'
                         : 'bg-[#A3A39E] dark:bg-[#5C5C58]'
                 "
-                :style="{
-                    transform: `scaleX(${Math.min(Math.max(cpu, 0), 100) / 100})`,
-                }"
+                :style="{ '--fill': Math.min(Math.max(cpu, 0), 100) / 100 }"
             />
         </div>
         <span

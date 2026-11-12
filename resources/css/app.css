@@ -460,10 +460,71 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
     scale: 0.97;
 }
 
-/* A new page settles in. Only when the page itself changes: Inertia keeps
-   the same element across reloads and filter changes, so those don't replay. */
-.ds-page-host > * {
+/* A new page settles in: its sections rise one after another, then table
+   rows cascade. Only when the page itself changes; Inertia keeps the same
+   elements across reloads, so polling and filters don't replay it. Nothing
+   waits on it: everything is clickable from the first frame. */
+.ds-page-host > :not(.workspace-panel) {
     animation: ds-page-enter 220ms var(--ease-out) backwards;
+}
+
+.ds-page-host > .workspace-panel > * {
+    animation: ds-rise 280ms var(--ease-out) backwards;
+}
+
+.ds-page-host > .workspace-panel > :nth-child(2) {
+    animation-delay: 45ms;
+}
+
+.ds-page-host > .workspace-panel > :nth-child(3) {
+    animation-delay: 90ms;
+}
+
+.ds-page-host > .workspace-panel > :nth-child(4) {
+    animation-delay: 135ms;
+}
+
+.ds-page-host > .workspace-panel > :nth-child(n + 5) {
+    animation-delay: 180ms;
+}
+
+.ds-page-host [role='row'] {
+    animation: ds-row-in 260ms var(--ease-out) backwards;
+    animation-delay: 220ms;
+}
+
+.ds-page-host [role='row']:nth-child(1) {
+    animation-delay: 60ms;
+}
+.ds-page-host [role='row']:nth-child(2) {
+    animation-delay: 75ms;
+}
+.ds-page-host [role='row']:nth-child(3) {
+    animation-delay: 90ms;
+}
+.ds-page-host [role='row']:nth-child(4) {
+    animation-delay: 105ms;
+}
+.ds-page-host [role='row']:nth-child(5) {
+    animation-delay: 120ms;
+}
+.ds-page-host [role='row']:nth-child(6) {
+    animation-delay: 135ms;
+}
+.ds-page-host [role='row']:nth-child(7) {
+    animation-delay: 150ms;
+}
+.ds-page-host [role='row']:nth-child(8) {
+    animation-delay: 165ms;
+}
+.ds-page-host [role='row']:nth-child(9) {
+    animation-delay: 180ms;
+}
+.ds-page-host [role='row']:nth-child(10) {
+    animation-delay: 195ms;
+}
+.ds-page-host [role='row']:nth-child(11) {
+    animation-delay: 210ms;
 }
 
 @keyframes ds-page-enter {
@@ -473,8 +534,96 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
     }
 }
 
+@keyframes ds-rise {
+    from {
+        opacity: 0;
+        translate: 0 8px;
+    }
+}
+
+@keyframes ds-row-in {
+    from {
+        opacity: 0;
+        translate: 0 5px;
+    }
+}
+
+/* Segmented controls: the selected thumb slides between options. The
+   position comes from lib/motion/segments.ts as custom properties; without
+   it (no JS yet), the selected option keeps its own background. */
+.ds-segments[data-thumb] {
+    position: relative;
+    isolation: isolate;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        width: var(--thumb-w, 0);
+        height: var(--thumb-h, 0);
+        border-radius: 7px;
+        background-color: var(--ds-segment-thumb);
+        box-shadow:
+            rgb(0 0 0 / 0.08) 0 1px 2px,
+            rgb(0 0 0 / 0.06) 0 0 0 0.5px;
+        opacity: var(--thumb-o, 0);
+        transform: translate(var(--thumb-x, 0), var(--thumb-y, 0));
+        pointer-events: none;
+    }
+
+    & > a,
+    & > button {
+        &[aria-current='page'],
+        &[aria-pressed='true'],
+        &[role='tab'][aria-selected='true'] {
+            background-color: transparent;
+            box-shadow: none;
+        }
+    }
+}
+
+.ds-segments[data-thumb='glide']::before {
+    transition:
+        transform 260ms var(--ease-out),
+        width 260ms var(--ease-out),
+        height 260ms var(--ease-out),
+        opacity 150ms ease;
+}
+
+.dark .ds-segments[data-thumb]::before {
+    box-shadow:
+        rgb(255 255 255 / 0.06) 0 1px 0 inset,
+        rgb(0 0 0 / 0.3) 0 1px 2px;
+}
+
+/* Bars fill from empty the first time they show, then follow the value. */
+.ds-fill {
+    transform: scaleX(var(--fill, 0));
+    transform-origin: left;
+    transition: transform 500ms var(--ease-out);
+
+    @starting-style {
+        transform: scaleX(0);
+    }
+}
+
+.ds-dot-in {
+    animation: ds-dot-in 220ms var(--ease-out) backwards;
+}
+
+@keyframes ds-dot-in {
+    from {
+        opacity: 0;
+        scale: 0.4;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .ds-page-host > * {
+    .ds-page-host > :not(.workspace-panel),
+    .ds-page-host > .workspace-panel > *,
+    .ds-page-host [role='row'] {
         animation-name: ds-page-fade;
     }
 
@@ -483,16 +632,88 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
             opacity: 0;
         }
     }
+
+    .ds-segments[data-thumb='glide']::before {
+        transition: opacity 150ms ease;
+    }
+
+    .ds-fill {
+        transition: none;
+    }
+
+    .ds-dot-in {
+        animation: none;
+    }
 }
 
-/* Icon motion. Only where it tells you something: an arrow that leads
-   somewhere, a chevron that opens, copied, done, loading. No decorative
-   hover wiggles on icons people pass over all day. */
-.mi-arrow {
-    transition: translate 160ms var(--ease-out);
+/* Icon motion: quick and small, no bounce. Hover effects only on devices
+   that really hover. Feedback (copied, done, loading) lives further down. */
+.mi-plus,
+.mi-close,
+.mi-tilt,
+.mi-grow,
+.mi-shrink,
+.mi-ring {
+    transition:
+        rotate 200ms var(--ease-out),
+        scale 160ms var(--ease-out);
+}
+
+.mi-arrow,
+.mi-dip,
+.mi-panel path,
+.mi-copy rect,
+.mi-copy path {
+    transition: translate 180ms var(--ease-out);
+}
+
+.mi-drop {
+    transition:
+        rotate 180ms var(--ease-out),
+        translate 180ms var(--ease-out);
+}
+
+.mi-copy {
+    transition:
+        opacity 150ms ease,
+        translate 180ms var(--ease-out);
+}
+
+:hover > .mi-copy {
+    opacity: 1;
+}
+
+:active > .mi-close {
+    scale: 0.88;
 }
 
 @media (hover: hover) and (pointer: fine) {
+    :hover > .mi-plus,
+    :hover > .mi-close {
+        rotate: 90deg;
+    }
+
+    :hover > .mi-tilt {
+        rotate: -8deg;
+        scale: 1.06;
+    }
+
+    :hover > .mi-grow {
+        scale: 1.08;
+    }
+
+    :hover > .mi-shrink {
+        scale: 0.9;
+    }
+
+    :hover > .mi-ring {
+        scale: 1.06;
+    }
+
+    :hover > .mi-ring .mi-ring-fill {
+        animation: mi-ring-fill-again 600ms var(--ease-in-out);
+    }
+
     :hover > .mi-arrow {
         translate: 2px 0;
     }
@@ -500,26 +721,45 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
     :hover > .mi-arrow-up {
         translate: 1.5px -1.5px;
     }
+
+    :hover > .mi-dip {
+        translate: 0 1.5px;
+    }
+
+    :hover > .mi-dip.mi-dip-up {
+        translate: 0 -1.5px;
+    }
+
+    :hover > .mi-panel path {
+        translate: -1.5px 0;
+    }
+
+    :hover > .mi-panel.mi-panel-open path {
+        translate: 1.5px 0;
+    }
+
+    :hover > .mi-copy rect {
+        translate: 1px 1px;
+    }
+
+    :hover > .mi-copy path,
+    :hover > .mi-copy g > path:first-child {
+        translate: -0.5px -0.5px;
+    }
+
+    [data-state='closed']:hover > .mi-drop {
+        translate: 0 1px;
+    }
+
+    [data-state='open']:hover > .mi-drop {
+        translate: 0 -1px;
+    }
 }
 
-.mi-close {
-    transition: scale 120ms var(--ease-out);
-}
-
-:active > .mi-close {
-    scale: 0.9;
-}
-
-.mi-drop {
-    transition: rotate 180ms var(--ease-out);
-}
-
-.mi-copy {
-    transition: opacity 150ms ease;
-}
-
-:hover > .mi-copy {
-    opacity: 1;
+@keyframes mi-ring-fill-again {
+    from {
+        stroke-dashoffset: var(--ring);
+    }
 }
 
 @package-css 'site-rainbow.css';
@@ -586,15 +826,47 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
         scale: none;
     }
 
-    .mi-arrow,
+    .mi-plus,
     .mi-close,
-    .mi-drop {
+    .mi-tilt,
+    .mi-grow,
+    .mi-shrink,
+    .mi-ring,
+    .mi-arrow,
+    .mi-dip,
+    .mi-drop,
+    .mi-panel path,
+    .mi-copy rect,
+    .mi-copy path {
         transition: none;
     }
 
+    :hover > .mi-plus,
+    :hover > .mi-close,
+    :hover > .mi-tilt {
+        rotate: none;
+    }
+
+    :hover > .mi-tilt,
+    :hover > .mi-grow,
+    :hover > .mi-shrink,
+    :hover > .mi-ring {
+        scale: none;
+    }
+
     :hover > .mi-arrow,
-    :hover > .mi-arrow-up {
+    :hover > .mi-arrow-up,
+    :hover > .mi-dip,
+    :hover > .mi-panel path,
+    :hover > .mi-copy rect,
+    :hover > .mi-copy path,
+    :hover > .mi-copy g > path:first-child,
+    [data-state]:hover > .mi-drop {
         translate: none;
+    }
+
+    :hover > .mi-ring .mi-ring-fill {
+        animation: none;
     }
 
     .mi-pop,

@@ -43,6 +43,7 @@ declare module '@inertiajs/core' {
 declare module 'vue' {
     interface GlobalDirectives {
         vFocus: Directive<HTMLElement, boolean | undefined>;
+        vCountUp: Directive<HTMLElement>;
     }
 
     interface ComponentCustomProperties {

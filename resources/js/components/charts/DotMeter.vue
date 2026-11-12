@@ -30,12 +30,17 @@ function opacity(index: number): number {
             class="size-[4px] shrink-0 rounded-full"
             :class="
                 index <= lit
-                    ? warn
-                        ? 'bg-(--ds-amber)'
-                        : 'bg-(--ds-text)'
+                    ? ['ds-dot-in', warn ? 'bg-(--ds-amber)' : 'bg-(--ds-text)']
                     : 'bg-(--ds-border-strong)'
             "
-            :style="index <= lit ? { opacity: opacity(index - 1) } : undefined"
+            :style="
+                index <= lit
+                    ? {
+                          opacity: opacity(index - 1),
+                          animationDelay: `${120 + index * 18}ms`,
+                      }
+                    : undefined
+            "
         />
     </span>
 </template>

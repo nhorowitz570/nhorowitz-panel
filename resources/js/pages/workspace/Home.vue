@@ -769,6 +769,7 @@ const focusRing =
                         </dt>
                         <dd class="flex items-baseline gap-2">
                             <span
+                                v-count-up
                                 class="text-[24px]/7 font-semibold tracking-[-0.02em] tabular-nums"
                                 >{{ kpi.value }}</span
                             >
