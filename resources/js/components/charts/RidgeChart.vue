@@ -359,7 +359,7 @@ watch(
         <canvas ref="canvas" class="absolute inset-0 size-full" />
         <div
             v-if="empty"
-            class="absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 text-center font-ui-mono text-[11px]/4 uppercase"
+            class="absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 text-center text-[13px]/5"
         >
             <span class="text-(--ds-text-secondary)">{{
                 $t('No CPU samples in the last hour')

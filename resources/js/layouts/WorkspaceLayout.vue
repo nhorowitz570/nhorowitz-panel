@@ -189,7 +189,7 @@ watch(
                             aria-hidden="true"
                         />
                         <div
-                            class="min-h-0 grow overflow-y-auto overscroll-contain"
+                            class="ds-page-host min-h-0 grow overflow-y-auto overscroll-contain"
                         >
                             <WorkspacePageSkeleton v-if="switchingTo" />
                             <slot v-else />

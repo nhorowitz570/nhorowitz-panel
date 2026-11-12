@@ -73,7 +73,9 @@ const focusRing =
                 class="min-w-0 grow overflow-hidden rounded-[10px] bg-(--ds-panel)"
                 :style="{ boxShadow: panelShadow }"
             >
-                <div class="h-full overflow-y-auto overscroll-contain">
+                <div
+                    class="ds-page-host h-full overflow-y-auto overscroll-contain"
+                >
                     <slot />
                 </div>
             </main>

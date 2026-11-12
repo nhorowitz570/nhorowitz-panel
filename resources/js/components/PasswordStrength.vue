@@ -121,7 +121,7 @@ const level = computed(() => levels[score.value - 1]);
                         "
                     >
                         <span
-                            class="flex size-3.5 shrink-0 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                            class="flex size-3.5 shrink-0 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-out"
                             :class="
                                 rule.met
                                     ? 'scale-100 bg-(--ds-green)/15'
@@ -129,7 +129,7 @@ const level = computed(() => levels[score.value - 1]);
                             "
                         >
                             <Check
-                                class="size-2.5 transition-[opacity,transform,color] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                                class="size-2.5 transition-[opacity,transform,color] duration-200 ease-out"
                                 :class="
                                     rule.met
                                         ? 'scale-100 text-(--ds-green) opacity-100'

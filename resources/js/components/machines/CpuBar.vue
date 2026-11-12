@@ -61,7 +61,31 @@ const bars = computed(() => {
 </script>
 
 <template>
-    <div class="flex min-w-0 items-center gap-2.5">
+    <div v-if="themed" class="flex min-w-0 items-center gap-2.5">
+        <div
+            class="h-1.5 w-20 min-w-0 shrink overflow-hidden rounded-full bg-(--ds-divider)"
+            aria-hidden="true"
+        >
+            <div
+                class="h-full w-full origin-left rounded-full transition-transform duration-300 ease-out motion-reduce:transition-none"
+                :class="
+                    isHot
+                        ? 'bg-[#DC2626] dark:bg-[#F87171]'
+                        : 'bg-[#A3A39E] dark:bg-[#5C5C58]'
+                "
+                :style="{
+                    transform: `scaleX(${Math.min(Math.max(cpu, 0), 100) / 100})`,
+                }"
+            />
+        </div>
+        <span
+            class="w-8.5 shrink-0 text-right text-xs/4 tabular-nums"
+            :class="valueClass"
+        >
+            {{ cpu }}%
+        </span>
+    </div>
+    <div v-else class="flex min-w-0 items-center gap-2.5">
         <div
             class="flex min-w-0 items-center gap-[1.5px] overflow-hidden"
             aria-hidden="true"

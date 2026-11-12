@@ -54,59 +54,46 @@ const variants: Record<
     },
 };
 
-const themedVariants: Record<
-    Environment,
-    { badgeClass: string; dotClass: string; textClass: string }
-> = {
-    production: {
-        badgeClass:
-            'border-[#C3D5FB] bg-[#EEF4FF] dark:border-[#2F4C80] dark:bg-[#1B2A45]',
-        dotClass:
-            'bg-[#1F5FE0] shadow-[0_0_0_2px_#1F5FE026] dark:bg-[#60A5FA] dark:shadow-[0_0_0_2px_#60A5FA33]',
-        textClass: 'text-[#1A4FBF] dark:text-[#93BBFD]',
-    },
-    staging: {
-        badgeClass:
-            'border-[#F3D58F] bg-[#FEF6E0] dark:border-[#6B5220] dark:bg-[#3A2C12]',
-        dotClass:
-            'bg-[#D97706] shadow-[0_0_0_2px_#D9770626] dark:bg-[#FBBF24] dark:shadow-[0_0_0_2px_#FBBF2433]',
-        textClass: 'text-[#92400E] dark:text-[#FCD34D]',
-    },
-    development: {
-        badgeClass:
-            'border-[#E0E0DC] bg-[#F4F4F2] dark:border-[#3F3F43] dark:bg-[#262628]',
-        dotClass:
-            'bg-[#8E8E88] shadow-[0_0_0_2px_#8E8E8826] dark:bg-[#A1A1AA] dark:shadow-[0_0_0_2px_#A1A1AA2E]',
-        textClass: 'text-[#52524E] dark:text-[#C4C4CC]',
-    },
+// In the panel: a coloured dot and a plain label. The colour carries the
+// meaning; a border, fill and glow on top of it was saying it three times.
+const themedDots: Record<Environment, string> = {
+    production: 'bg-[#2563EB] dark:bg-[#60A5FA]',
+    staging: 'bg-[#D97706] dark:bg-[#FBBF24]',
+    development: 'bg-[#A1A1AA] dark:bg-[#71717A]',
 };
 
 const variant = computed(() => {
-    const landing = variants[props.environment];
-
     if (!props.themed) {
-        return landing;
+        return variants[props.environment];
     }
 
     return {
-        ...themedVariants[props.environment],
-        badgeClass: `${themedVariants[props.environment].badgeClass} shadow-[0_1px_2px_rgb(0_0_0/0.05)] dark:[box-shadow:var(--badge-shadow)] dark:[background-image:var(--badge-image)]`,
-        style: {
-            '--badge-shadow': landing.style.boxShadow ?? '',
-            '--badge-image': landing.style.backgroundImage ?? '',
-        },
+        badgeClass: '',
+        dotClass: themedDots[props.environment],
+        textClass: 'text-(--ds-text-secondary)',
+        style: {},
     };
 });
 </script>
 
 <template>
     <span
-        class="flex items-center gap-1.5 rounded-[7px] border bg-origin-border py-0.75 pr-2.25 pl-2"
-        :class="variant.badgeClass"
+        class="flex items-center gap-1.5"
+        :class="
+            themed
+                ? 'py-0.75'
+                : [
+                      'rounded-[7px] border bg-origin-border py-0.75 pr-2.25 pl-2',
+                      variant.badgeClass,
+                  ]
+        "
         :style="variant.style"
     >
         <span class="size-1.5 rounded-full" :class="variant.dotClass" />
-        <span class="text-xs/4 font-medium" :class="variant.textClass">
+        <span
+            class="text-xs/4"
+            :class="[variant.textClass, !themed && 'font-medium']"
+        >
             {{ environmentLabels[environment] }}
         </span>
     </span>

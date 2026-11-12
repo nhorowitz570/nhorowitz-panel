@@ -67,6 +67,9 @@
 }
 
 @theme {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
     --font-display: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
     --font-hero: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
     --font-body: Cabin, ui-sans-serif, system-ui, sans-serif;
@@ -375,11 +378,6 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
 .danger-button__lid {
     transform-box: fill-box;
     transform-origin: 0% 100%;
-    transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.danger-button:hover:not(:disabled) .danger-button__lid {
-    transform: translateY(-2px) rotate(-14deg);
 }
 
 .danger-button:active:not(:disabled) .danger-button__lid,
@@ -453,6 +451,7 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
 .ds-segments > button {
     transition-property: color, background, box-shadow, scale;
     transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
 }
 
 .ds-raised-button:active,
@@ -461,69 +460,72 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
     scale: 0.97;
 }
 
-.mi-plus {
-    transition: rotate 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+/* A new page settles in. Only when the page itself changes: Inertia keeps
+   the same element across reloads and filter changes, so those don't replay. */
+.ds-page-host > * {
+    animation: ds-page-enter 220ms var(--ease-out) backwards;
 }
 
-:hover > .mi-plus {
-    rotate: 90deg;
+@keyframes ds-page-enter {
+    from {
+        opacity: 0;
+        translate: 0 4px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ds-page-host > * {
+        animation-name: ds-page-fade;
+    }
+
+    @keyframes ds-page-fade {
+        from {
+            opacity: 0;
+        }
+    }
+}
+
+/* Icon motion. Only where it tells you something: an arrow that leads
+   somewhere, a chevron that opens, copied, done, loading. No decorative
+   hover wiggles on icons people pass over all day. */
+.mi-arrow {
+    transition: translate 160ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    :hover > .mi-arrow {
+        translate: 2px 0;
+    }
+
+    :hover > .mi-arrow-up {
+        translate: 1.5px -1.5px;
+    }
 }
 
 .mi-close {
-    transition:
-        rotate 260ms cubic-bezier(0.34, 1.56, 0.64, 1),
-        scale 120ms ease-out;
-}
-
-:hover > .mi-close {
-    rotate: 90deg;
+    transition: scale 120ms var(--ease-out);
 }
 
 :active > .mi-close {
-    scale: 0.82;
+    scale: 0.9;
 }
 
-.mi-grow,
-.mi-shrink {
-    transition: scale 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+.mi-drop {
+    transition: rotate 180ms var(--ease-out);
 }
 
-:hover > .mi-grow {
-    scale: 1.18;
+.mi-copy {
+    transition: opacity 150ms ease;
 }
 
-:hover > .mi-shrink {
-    scale: 0.8;
+:hover > .mi-copy {
+    opacity: 1;
 }
 
 @package-css 'site-rainbow.css';
 
-.mi-dip {
-    transition: translate 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-:hover > .mi-dip {
-    translate: 0 2px;
-}
-
-:hover > .mi-dip.mi-dip-up {
-    translate: 0 -2px;
-}
-
-.mi-ring {
-    transition: scale 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-:hover > .mi-ring {
-    scale: 1.15;
-}
-
 .mi-ring-fill {
-    animation: mi-ring-fill 700ms cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-:hover > .mi-ring .mi-ring-fill {
-    animation: mi-ring-fill-again 700ms cubic-bezier(0.65, 0, 0.35, 1);
+    animation: mi-ring-fill 600ms var(--ease-in-out);
 }
 
 @keyframes mi-ring-fill {
@@ -532,98 +534,18 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
     }
 }
 
-@keyframes mi-ring-fill-again {
-    from {
-        stroke-dashoffset: var(--ring);
-    }
-}
-
-.mi-panel path {
-    transition: translate 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-:hover > .mi-panel path {
-    translate: -2px 0;
-}
-
-:hover > .mi-panel.mi-panel-open path {
-    translate: 3px 0;
-}
-
-.mi-copy rect,
-.mi-copy path {
-    transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.mi-copy {
-    transition: opacity 150ms;
-}
-
-:hover > .mi-copy {
-    opacity: 1;
-}
-
-:hover > .mi-copy rect {
-    translate: 1.5px 1.5px;
-}
-
-:hover > .mi-copy path {
-    translate: -1px -1px;
-}
-
-:hover > .mi-copy g > path:first-child {
-    translate: 1.5px 1.5px;
-}
-
-.mi-arrow {
-    transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-:hover > .mi-arrow {
-    translate: 2px 0;
-}
-
-:hover > .mi-arrow-up {
-    translate: 2px -2px;
-}
-
-.mi-tilt {
-    transition:
-        rotate 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
-        scale 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-:hover > .mi-tilt {
-    rotate: -14deg;
-    scale: 1.12;
-}
-
-.mi-drop {
-    transition:
-        rotate 200ms ease,
-        translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-[data-state='closed']:hover > .mi-drop {
-    translate: 0 1.5px;
-}
-
-[data-state='open']:hover > .mi-drop {
-    translate: 0 -1.5px;
-}
-
 .mi-spin {
-    animation: mi-spin 700ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    animation: mi-spin 700ms linear infinite;
 }
 
 .mi-pop {
-    animation: mi-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: mi-pop 200ms var(--ease-out);
 }
 
 .mi-draw {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    animation: mi-draw 320ms cubic-bezier(0.65, 0, 0.35, 1) 60ms forwards;
+    animation: mi-draw 280ms var(--ease-out) 40ms forwards;
 }
 
 .mi-sweep {
@@ -645,7 +567,7 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
 
 @keyframes mi-pop {
     from {
-        scale: 0.4;
+        scale: 0.6;
         opacity: 0;
     }
 }
@@ -659,74 +581,30 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
 @media (prefers-reduced-motion: reduce) {
     .ds-raised-button:active,
     .ds-segments > a:active,
-    .ds-segments > button:active {
-        scale: none;
-    }
-
-    .mi-plus,
-    .mi-arrow,
-    .mi-tilt,
-    .mi-close,
-    .mi-dip,
-    .mi-grow,
-    .mi-shrink {
-        transition: none;
-    }
-
-    :hover > .mi-grow,
-    :hover > .mi-shrink {
-        scale: none;
-    }
-
-    .mi-panel path,
-    .mi-drop,
-    .mi-copy rect,
-    .mi-copy path {
-        transition: none;
-    }
-
-    :hover > .mi-copy rect,
-    :hover > .mi-copy path,
-    :hover > .mi-copy g > path:first-child {
-        translate: none;
-    }
-
-    :hover > .mi-tilt {
-        scale: none;
-    }
-
-    [data-state]:hover > .mi-drop {
-        translate: none;
-    }
-
-    :hover > .mi-panel path {
-        translate: none;
-    }
-
+    .ds-segments > button:active,
     :active > .mi-close {
         scale: none;
     }
 
-    :hover > .mi-close,
-    :hover > .mi-dip,
-    :hover > .mi-plus,
+    .mi-arrow,
+    .mi-close,
+    .mi-drop {
+        transition: none;
+    }
+
     :hover > .mi-arrow,
-    :hover > .mi-arrow-up,
-    :hover > .mi-tilt {
-        rotate: none;
+    :hover > .mi-arrow-up {
         translate: none;
     }
 
-    .mi-spin,
     .mi-pop,
     .mi-sweep,
-    .mi-ring-fill,
-    :hover > .mi-ring .mi-ring-fill {
+    .mi-ring-fill {
         animation: none;
     }
 
-    :hover > .mi-ring {
-        scale: none;
+    .mi-spin {
+        animation-duration: 1.4s;
     }
 
     .mi-draw {
@@ -1833,7 +1711,7 @@ html:has(.marketing-page)::-webkit-scrollbar-thumb:active {
 }
 
 .shape-check {
-    animation: mi-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms both;
+    animation: mi-pop 420ms var(--ease-out) 120ms both;
 }
 
 @keyframes shape-option {

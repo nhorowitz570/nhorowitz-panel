@@ -19,7 +19,6 @@ import {
 import { updateTheme } from '@/composables/useAppearance';
 import { track } from '@/lib/analytics';
 import { appButtonClasses } from '@/lib/appButton';
-import { bloom, grain } from '@/lib/brand';
 import { docsUrl } from '@/lib/docs';
 import type { PolicySettings } from '@/lib/machinePolicies';
 import {
@@ -600,26 +599,14 @@ onBeforeUnmount(() =>
     <div
         class="marketing-page ds-root relative isolate flex min-h-svh flex-col overflow-hidden bg-(--ds-frame) font-ui text-(--ds-text) antialiased"
     >
-        <div
-            aria-hidden="true"
-            class="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[78svh] min-h-[560px] mask-[linear-gradient(black_0%,black_55%,rgb(0_0_0/0.55)_78%,transparent)]"
-            :style="{ backgroundImage: bloom }"
-        >
-            <div
-                class="absolute inset-0 opacity-[0.05]"
-                :style="{ backgroundImage: grain }"
-            />
-        </div>
-
         <main class="flex grow items-center justify-center px-4 py-12">
             <div class="cs-rise w-full max-w-[460px]">
                 <span
-                    class="mx-auto mb-7 flex w-fit items-center gap-2.5 text-white"
+                    class="mx-auto mb-7 flex w-fit items-center gap-2.5 text-(--ds-text)"
                 >
-                    <img
-                        src="/images/landing/serveros-logo.svg"
-                        alt=""
-                        class="size-[22px] object-contain"
+                    <span
+                        aria-hidden="true"
+                        class="size-[22px] bg-current [mask:url(/images/landing/serveros-logo.svg)_center/contain_no-repeat]"
                     />
                     <span
                         class="text-[19px]/6 font-semibold tracking-[-0.025em]"
@@ -627,7 +614,7 @@ onBeforeUnmount(() =>
                     >
                 </span>
                 <div
-                    class="ds-modal workspace-panel overflow-hidden rounded-[12px]! p-8 shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_2px_4px_rgb(0_0_0/0.04),0_24px_48px_-16px_rgb(2_16_56/0.35)]!"
+                    class="ds-modal workspace-panel overflow-hidden rounded-[12px]! p-8 shadow-[0_0_0_1px_rgb(0_0_0/0.06),0_2px_4px_rgb(0_0_0/0.04),0_16px_32px_-16px_rgb(0_0_0/0.12)]!"
                 >
                     <div class="mb-6 flex items-center gap-1.5">
                         <span

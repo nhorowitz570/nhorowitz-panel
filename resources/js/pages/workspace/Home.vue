@@ -544,7 +544,9 @@ const focusRing =
     <Head :title="$t('Home')" />
 
     <WorkspacePage
-        :title="$t('Hey :firstName 👋', { firstName: String(firstName) })"
+        :title="
+            $t('Welcome back, :firstName', { firstName: String(firstName) })
+        "
         toolbar
     >
         <template #description>
@@ -756,9 +758,7 @@ const focusRing =
                         :key="kpi.label"
                         class="relative flex min-w-0 flex-col gap-1.5 border-(--ds-divider) px-5 py-4 not-first:max-sm:border-t sm:even:border-l xl:not-first:border-l sm:[&:nth-child(n+3)]:max-xl:border-t"
                     >
-                        <dt
-                            class="font-ui-mono text-[10.5px]/4 tracking-[0.08em] text-(--ds-text-faint) uppercase"
-                        >
+                        <dt class="text-[12.5px]/4 text-(--ds-text-muted)">
                             <Link
                                 v-if="kpi.href"
                                 :href="kpi.href"
@@ -767,13 +767,13 @@ const focusRing =
                             >
                             <template v-else>{{ kpi.label }}</template>
                         </dt>
-                        <dd class="flex items-baseline gap-2 font-ui-mono">
+                        <dd class="flex items-baseline gap-2">
                             <span
-                                class="text-[22px]/7 font-medium tracking-[-0.03em] tabular-nums"
+                                class="text-[24px]/7 font-semibold tracking-[-0.02em] tabular-nums"
                                 >{{ kpi.value }}</span
                             >
                             <span
-                                class="truncate text-[11px]/4 uppercase"
+                                class="truncate text-[12px]/4"
                                 :class="kpi.noteTone"
                                 >{{ kpi.note }}</span
                             >
@@ -782,9 +782,7 @@ const focusRing =
                 </dl>
                 <div class="px-5 pt-4 pb-3">
                     <div class="flex items-center justify-between gap-3">
-                        <p
-                            class="font-ui-mono text-[10.5px]/4 tracking-[0.08em] text-(--ds-text-faint) uppercase"
-                        >
+                        <p class="text-[12.5px]/4 text-(--ds-text-muted)">
                             {{
                                 $t('CPU · :count machines · :span', {
                                     count: String(stats.machines),
@@ -793,7 +791,7 @@ const focusRing =
                             }}
                         </p>
                         <div
-                            class="flex items-center gap-0.5 font-ui-mono text-[10.5px]/4 tracking-[0.06em] uppercase"
+                            class="flex items-center gap-0.5 text-[12px]/4"
                             role="group"
                             :aria-label="$t('Time range')"
                         >
