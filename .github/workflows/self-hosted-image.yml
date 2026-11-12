@@ -1,0 +1,219 @@
+name: Self-hosted image
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Version to publish, like 1.0.0 (no v)'
+                required: true
+                type: string
+    push:
+        tags:
+            - 'v*'
+
+permissions: {}
+
+concurrency:
+    group: self-hosted-image-${{ github.ref }}
+    cancel-in-progress: false
+
+env:
+    IMAGE: ghcr.io/serveroshq/panel
+
+jobs:
+    prepare:
+        name: Version and panel-ee
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        environment: self-hosted-image
+        permissions:
+            contents: read
+        outputs:
+            version: ${{ steps.version.outputs.version }}
+            tags: ${{ steps.version.outputs.tags }}
+            created: ${{ steps.version.outputs.created }}
+        steps:
+            - name: Work out the version
+              id: version
+              env:
+                  INPUT_VERSION: ${{ inputs.version }}
+                  REF_NAME: ${{ github.ref_name }}
+                  EVENT_NAME: ${{ github.event_name }}
+              run: |
+                  if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                      version="$INPUT_VERSION"
+                  else
+                      version="${REF_NAME#v}"
+                  fi
+                  if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+                      echo "::error::Not a version like 1.0.0 or 1.0.0-rc.1: $version"
+                      exit 1
+                  fi
+                  tags="$IMAGE:$version"
+                  case "$version" in
+                      *-*) ;;
+                      *) tags="$tags,$IMAGE:latest" ;;
+                  esac
+                  {
+                      echo "version=$version"
+                      echo "tags=$tags"
+                      echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  } >> "$GITHUB_OUTPUT"
+
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Add panel-ee to the lock
+              env:
+                  COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+              run: |
+                  if [ -z "$COMPOSER_AUTH" ]; then
+                      echo "::error::COMPOSER_AUTH isn't set in the self-hosted-image environment, so panel-ee can't be added."
+                      exit 1
+                  fi
+                  composer config repositories.panel-ee vcs https://github.com/serveroshq/panel-ee
+                  composer require --no-update serveroshq/panel-ee:dev-main
+                  composer update serveroshq/panel-ee --no-install --no-scripts --ignore-platform-reqs --no-interaction
+
+            - name: Keep the lock for both builds
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: composer-files
+                  path: |
+                      composer.json
+                      composer.lock
+                  retention-days: 1
+                  if-no-files-found: error
+
+    build:
+        name: Build ${{ matrix.arch }}
+        needs: prepare
+        runs-on: ${{ matrix.runner }}
+        timeout-minutes: 90
+        environment: self-hosted-image
+        permissions:
+            contents: read
+            packages: write # push each architecture's image by digest
+        strategy:
+            fail-fast: true
+            matrix:
+                include:
+                    - arch: amd64
+                      runner: ubuntu-24.04
+                    - arch: arm64
+                      runner: ubuntu-24.04-arm
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Use the lock with panel-ee
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: composer-files
+
+            - name: Set up Buildx
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+            - name: Log in to ghcr.io
+              uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Build and push by digest
+              id: build
+              uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+              env:
+                  COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+              with:
+                  context: .
+                  file: docker/self-hosted/Dockerfile
+                  platforms: linux/${{ matrix.arch }}
+                  secret-envs: composer_auth=COMPOSER_AUTH
+                  build-args: SERVEROS_VERSION=${{ needs.prepare.outputs.version }}
+                  outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+                  cache-from: type=gha,scope=self-hosted-${{ matrix.arch }}
+                  cache-to: type=gha,mode=max,scope=self-hosted-${{ matrix.arch }}
+                  provenance: false
+                  labels: |
+                      org.opencontainers.image.title=ServerOS panel
+                      org.opencontainers.image.description=The ServerOS panel for your own server. Contains the commercial serveroshq/panel-ee package, off until a license key is added.
+                      org.opencontainers.image.url=https://serveros.com
+                      org.opencontainers.image.source=https://github.com/serveroshq/panel
+                      org.opencontainers.image.documentation=https://github.com/serveroshq/panel/blob/main/docs/self-hosting.md
+                      org.opencontainers.image.vendor=ServerOS Cloud Ltd
+                      org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+                      org.opencontainers.image.created=${{ needs.prepare.outputs.created }}
+                      org.opencontainers.image.revision=${{ github.sha }}
+                      org.opencontainers.image.licenses=AGPL-3.0-only AND LicenseRef-ServerOS-Commercial
+                      com.serveros.edition=official
+                      com.serveros.license-note=The panel is AGPL-3.0-only (source at github.com/serveroshq/panel). This image also contains serveroshq/panel-ee under the ServerOS Commercial License (vendor/serveroshq/panel-ee/LICENSE).
+
+            - name: Note the digest
+              env:
+                  DIGEST: ${{ steps.build.outputs.digest }}
+              run: |
+                  mkdir -p "$RUNNER_TEMP/digests"
+                  touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+            - name: Keep the digest
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: digest-${{ matrix.arch }}
+                  path: ${{ runner.temp }}/digests/*
+                  retention-days: 1
+                  if-no-files-found: error
+
+    publish:
+        name: Publish ghcr.io/serveroshq/panel
+        needs: [prepare, build]
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        permissions:
+            packages: write # tag the two digests as one image
+        steps:
+            - name: Collect the digests
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  pattern: digest-*
+                  merge-multiple: true
+                  path: ${{ runner.temp }}/digests
+
+            - name: Set up Buildx
+              uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+            - name: Log in to ghcr.io
+              uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Tag both architectures as one image
+              working-directory: ${{ runner.temp }}/digests
+              env:
+                  TAGS: ${{ needs.prepare.outputs.tags }}
+                  VERSION: ${{ needs.prepare.outputs.version }}
+              run: |
+                  args=()
+                  IFS=',' read -ra tags <<< "$TAGS"
+                  for tag in "${tags[@]}"; do
+                      args+=(--tag "$tag")
+                  done
+                  digests=()
+                  for digest in *; do
+                      digests+=("$IMAGE@sha256:$digest")
+                  done
+                  [ "${#digests[@]}" -eq 2 ] || { echo "::error::Expected 2 digests, got ${#digests[@]}"; exit 1; }
+                  docker buildx imagetools create "${args[@]}" \
+                      --annotation "index:org.opencontainers.image.description=The ServerOS panel for your own server. Contains the commercial serveroshq/panel-ee package, off until a license key is added." \
+                      --annotation "index:org.opencontainers.image.source=https://github.com/serveroshq/panel" \
+                      --annotation "index:org.opencontainers.image.licenses=AGPL-3.0-only AND LicenseRef-ServerOS-Commercial" \
+                      --annotation "index:org.opencontainers.image.version=$VERSION" \
+                      "${digests[@]}"
+                  docker buildx imagetools inspect "$IMAGE:$VERSION"

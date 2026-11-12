@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+# Nothing gets write access unless a job asks for it.
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lint workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+
+  zizmor:
+    name: zizmor
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Audit workflows for security problems
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          version: 1.32.0
+          advanced-security: false
+
+  dependency-review:
+    name: dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Block new dependencies with known vulnerabilities
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+
+  # The panel's own checks. No secrets: the public panel needs no private
+  # package, so a pull request from a fork runs it exactly as main does.
+  # Each check runs once setup worked, even if an earlier one failed, so a
+  # red run lists every problem. The job still fails if any does.
+  tests:
+    name: tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: serveros
+          POSTGRES_PASSWORD: serveros
+          POSTGRES_DB: serveros
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U serveros -d serveros"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, pdo_pgsql, pdo_sqlite, zip
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Install
+        id: setup
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          npm ci --no-audit --no-fund
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build
+        id: build
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run build
+
+      - name: PHP style (Pint)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: composer lint:check
+
+      - name: PHP static analysis (PHPStan)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: composer types:check
+
+      - name: Frontend types
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run types:check
+
+      - name: Frontend format and lint (vp check)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: npm run check
+
+      - name: Routes load and cache
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          php artisan route:list > /dev/null
+          php artisan route:cache
+          php artisan route:clear
+
+      - name: Migrations on PostgreSQL
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: '5432'
+          DB_DATABASE: serveros
+          DB_USERNAME: serveros
+          DB_PASSWORD: serveros
+        run: php artisan migrate --force
+
+      - name: Tests (Pest)
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          php artisan config:clear --ansi
+          php artisan test --parallel
+
+  # The one check the main branch ruleset requires. Add new jobs to `needs`
+  # instead of adding them to the ruleset.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [actionlint, zizmor, dependency-review, tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check every job passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "A job ended with: $result"; exit 1 ;;
+            esac
+          done
